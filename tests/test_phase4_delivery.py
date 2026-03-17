@@ -16,9 +16,18 @@ def _sample_pulse() -> WeeklyPulse:
         ThemeSummary(theme="payments", count=10, average_rating=2.1),
         ThemeSummary(theme="onboarding", count=5, average_rating=4.2),
     ]
+    import json
+    body_json = {
+        "themes": [
+            {"name": "payments", "mentions": 10, "priority": "HIGH", "percentage_change": "+2%", "action_text": "Fix UPI"},
+            {"name": "onboarding", "mentions": 5, "priority": "MEDIUM", "percentage_change": "-1%", "action_text": "Streamline KYC"}
+        ],
+        "quotes": ["This is a test quote"],
+        "actions": [{"text": "Action 1", "priority_label": "HIGH", "rice_score": {"total": "8.5"}}]
+    }
     return WeeklyPulse(
         title="Groww App – Weekly Pulse, Week of 2026-03-09 to 2026-03-15",
-        body_markdown="# Weekly Pulse\n\nSome summary here.",
+        body_markdown=json.dumps(body_json),
         top_themes=themes,
         quotes=[],
         actions=[],
@@ -30,6 +39,7 @@ def _sample_meta() -> PulseRunMetadata:
         week_range_label="2026-03-09 to 2026-03-15",
         total_reviews=123,
         generated_at_iso=datetime(2026, 3, 16, 8, 30).isoformat(),
+        time_window_weeks=8,
     )
 
 
@@ -39,7 +49,7 @@ def test_render_pulse_html_contains_key_details() -> None:
 
     html = render_pulse_html(pulse, meta)
 
-    assert "Groww App – Weekly Pulse" in html
+    assert "Groww Weekly Pulse" in html
     assert meta.week_range_label in html
     assert "payments" in html
     assert "onboarding" in html

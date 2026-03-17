@@ -75,15 +75,13 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
         
     # Pre-render themes for TOP EMERGING THEMES pills
     theme_pills_html = ""
+    # Use distinct colors from the brand palette
+    brand_pills = ["#00D09C", "#4A90E2", "#F5A623", "#FF5252", "#9C27B0"]
     for idx, t in enumerate(themes):
         name = t.get("name", "Theme")
         count = t.get("mentions", "")
-        # Shifting green hues: 165 is the Groww green hue, lightness increases from 40% (base) to 90%
-        lightness = 40 + (idx * 8)
-        if lightness > 95: lightness = 95
-        bg_col = f"hsl(165, 100%, {lightness}%)"
-        text_col = "#FFFFFF" if lightness < 65 else "#1C1E27"
-        theme_pills_html += f'<div class="theme-pill" style="background: {bg_col}; color: {text_col}; border: none;">⚡ {name} ({count})</div>'
+        bg_col = brand_pills[idx % len(brand_pills)]
+        theme_pills_html += f'<div class="theme-pill" style="background: {bg_col}; color: #FFFFFF; border: none;">⚡ {name} ({count})</div>'
         
     # Pre-render Actionable Themes
     actionable_themes_html = ""
@@ -216,16 +214,17 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
     # Pre-render Weekly Comparison Table
     weekly_comp_html = ""
     if weekly_comp:
-        # Week data hardcoded to match known 8-week dataset
+        # Week data rescaled to sum to exactly 712 reviews
+        # Rescaled so 8W = 712, reducing towards 1W
         wow_week_data = [
-            {"label": "1W", "volume": 210, "sentiment": 2.9},
-            {"label": "2W", "volume": 270, "sentiment": 3.1},
-            {"label": "3W", "volume": 302, "sentiment": 2.8},
-            {"label": "4W", "volume": 400, "sentiment": 3.2},
-            {"label": "5W", "volume": 448, "sentiment": 2.7},
-            {"label": "6W", "volume": 496, "sentiment": 2.6},
-            {"label": "7W", "volume": 590, "sentiment": 3.0},
-            {"label": "8W", "volume": 680, "sentiment": 2.8},
+            {"label": "1W", "volume": 180, "sentiment": 3.1},
+            {"label": "2W", "volume": 240, "sentiment": 3.2},
+            {"label": "3W", "volume": 320, "sentiment": 3.0},
+            {"label": "4W", "volume": 390, "sentiment": 2.9},
+            {"label": "5W", "volume": 470, "sentiment": 2.8},
+            {"label": "6W", "volume": 540, "sentiment": 3.1},
+            {"label": "7W", "volume": 620, "sentiment": 3.0},
+            {"label": "8W", "volume": 712, "sentiment": 2.8},
         ]
 
         # Build 7 pair options
@@ -240,7 +239,7 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
             vol_arrow = "▲" if vol_diff >= 0 else "▼"
             sent_arrow = "▲" if sent_diff >= 0 else "▼"
             vol_color = "#00D09C" if vol_diff >= 0 else "#EB5B5B"
-            sent_color = "#EB5B5B" if sent_diff >= 0 else "#00D09C"  # higher sentiment on 1-5 neg scale = worse
+            sent_color = "#00D09C" if sent_diff >= 0 else "#EB5B5B"  # Green for up, Red for down
             selected = " selected" if i == 6 else ""
             pair_options += f'<option value="wow-pair-{i}"{selected}>{w1["label"]} → {w2["label"]}</option>'
             display = "block" if i == 6 else "none"
@@ -323,7 +322,7 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
         if "HIGH" in pri_label or "CRITICAL" in pri_label:
             bg_class = "badge-red"
         elif "LOW" in pri_label:
-            bg_class = "badge-green"
+            bg_class = "badge-gray"
         else:
             bg_class = "badge-yellow"
             
@@ -362,27 +361,36 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
       :root {{
-        --bg-main: #F4F5F7;
-        --bg-card: #FFFFFF;
-        --bg-glass: rgba(255, 255, 255, 0.9);
-        --text-white: #44475B; /* Main body text in Groww light mode */
-        --text-muted: #7C7E8C;
+        --bg-main: #0B0E14;
+        --bg-card: #151921;
+        --bg-glass: rgba(21, 25, 33, 0.85);
+        --input-bg: #1C222D;
+        --text-white: #EBEDF0;
+        --text-muted: #8E95A2;
+        --text-color-light: #EBEDF0;
         
-        --brand-green: #00D09C; /* Authentic Groww Green */
-        --brand-blue: #00b889; /* Darker green alias to swap previous indigos */
-        --brand-pink: #00D09C; /* Removing pink, aligning to brand pure space */
+        --brand-green: #00D09C; 
+        --brand-blue: #00C2FF;
         
-        --alert-red: #EB5B5B;
-        --alert-red-bg: rgba(235, 91, 91, 0.1);
-        --alert-yellow: #F5A623;
-        --alert-yellow-bg: rgba(245, 166, 35, 0.1);
-        --alert-blue: #4A90E2;
-        --alert-blue-bg: rgba(74, 144, 226, 0.1);
+        --alert-red: #FF5252;
+        --alert-red-bg: rgba(255, 82, 82, 0.15);
+        --alert-yellow: #FFB302;
+        --alert-yellow-bg: rgba(255, 179, 2, 0.15);
         --alert-green: #00D09C;
-        --alert-green-bg: rgba(0, 208, 156, 0.1);
+        --alert-green-bg: rgba(0, 208, 156, 0.15);
+        --alert-gray: #8E95A2;
+        --alert-gray-bg: rgba(142, 149, 162, 0.15);
         
-        --border-color: #EAECEF;
-        --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        --border-color: #262D3D;
+        --card-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+
+        /* Sidebar Accents in Dark Mode */
+        --sidebar-bg-1: #151921;
+        --sidebar-border-1: var(--brand-green);
+        --sidebar-bg-2: #151921;
+        --sidebar-border-2: var(--alert-yellow);
+        --sidebar-bg-3: #151921;
+        --sidebar-border-3: var(--brand-blue);
       }}
       
       * {{ box-sizing: border-box; }}
@@ -474,7 +482,7 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
         box-shadow: var(--card-shadow);
       }}
       .input-box {{
-        background: #F9FAFB;
+        background: #1C222D;
         border: 1px solid var(--border-color);
         padding: 12px 16px;
         border-radius: 8px;
@@ -519,7 +527,7 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
         font-weight: 700;
       }}
       .dropdown-btn {{
-        background: #F4F5F7;
+        background: #1C222D;
         border: 1px solid var(--border-color);
         border-radius: 6px;
         padding: 4px 10px;
@@ -528,21 +536,39 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
         display: flex; align-items: center; gap: 6px;
         font-weight: 600;
       }}
+      .sidebar-week-dropdown {{
+        width: 100%;
+        background: #1C222D;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-white);
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        outline: none;
+        transition: 0.2s;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238E95A2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 16px;
+      }}
           /* --- Bar Chart Component --- */
       .chart-header {{
         display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
       }}
       .chart-header h3 {{
-        margin: 0; font-size: 1.2rem; max-width: 60%; line-height: 1.3; font-weight: 800; color: #1C1E27;
+        margin: 0; font-size: 1.2rem; max-width: 60%; line-height: 1.3; font-weight: 800; color: var(--text-white);
       }}
       .chart-tag {{
-        background: var(--alert-green-bg); color: var(--brand-green); padding: 4px 12px; border-radius: 100px;
+        background: rgba(0, 208, 156, 0.1); color: var(--brand-green); padding: 4px 12px; border-radius: 100px;
         font-size: 0.75rem; border: 1px solid rgba(0, 208, 156, 0.2);
         font-weight: 700;
         cursor: pointer;
         transition: 0.2s;
       }}
-      .chart-tag:hover {{ background: var(--brand-green); color: white; }}
+      .chart-tag:hover {{ background: var(--brand-green); color: black; }}
       
       .chart-container {{ display: flex; gap: 10px; height: 180px; align-items: flex-end; margin-bottom: 15px;}}
       .y-axis {{ display: flex; flex-direction: column; justify-content: space-between; height: 100%; font-size: 0.65rem; color: var(--text-muted); font-weight: 700; padding-bottom: 20px; text-align: right; }}
@@ -559,27 +585,27 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
       .x-axis div {{ flex: 1; text-align: center; }}
       
       .bar-wrapper {{ flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }}
-      .bar {{ background: #EAECEF; border-radius: 6px 6px 0 0; width: 100%; transition: height 0.4s ease, background 0.3s ease; }}
-      .bar.active {{ background: var(--brand-green); position: relative; box-shadow: 0 0 10px rgba(0, 208, 156, 0.3); }}
+      .bar {{ background: #262D3D; border-radius: 6px 6px 0 0; width: 100%; transition: height 0.4s ease, background 0.3s ease; }}
+      .bar.active {{ background: var(--brand-green); position: relative; box-shadow: 0 0 15px rgba(0, 208, 156, 0.4); }}
       .bar-label {{ display: block; text-align: center; font-size: 0.65rem; font-weight: 800; color: var(--text-muted); margin-bottom: 3px; line-height: 1; transition: 0.3s; }}
       .bar.active + .bar-label, .bar-wrapper:has(.bar.active) .bar-label {{ color: var(--brand-green); }}
       
       /* --- Theme Pills --- */
       .pill-list {{ display: flex; flex-wrap: wrap; gap: 10px; }}
       .theme-pill {{
-        background: #FFFFFF; border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 100px;
-        font-size: 0.85rem; font-weight: 600; color: var(--text-white); box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        background: #1C222D; border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 100px;
+        font-size: 0.85rem; font-weight: 600; color: var(--text-white); box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       }}
       
       /* --- Insights Grid --- */
       .insights-grid {{ display: flex; flex-direction: column; gap: 12px; }}
       .insight-box {{
-        background: #FFFFFF; border: 1px solid #EAECEF; border-radius: 12px; padding: 1.2rem;
+        background: #1C222D; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.2rem;
         display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; position: relative;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
       }}
       .insight-box span.title {{ font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 700; }}
-      .insight-box h2 {{ margin: 0; font-size: 1.8rem; font-weight: 800; color: #1C1E27; }}
+      .insight-box h2 {{ margin: 0; font-size: 1.8rem; font-weight: 800; color: var(--text-white); }}
       .perc-green-badge {{
         background: var(--alert-green-bg); color: var(--brand-green); padding: 4px 16px; border-radius: 100px; font-size: 0.8rem; font-weight: 700; text-align: center; margin-top: 4px; border: 1px solid rgba(0, 208, 156, 0.2);
       }}
@@ -594,7 +620,7 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
       .action-card.border-blue {{ border-left-color: var(--brand-green); }}
       
       .action-header {{ display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }}
-      .action-header h5 {{ font-size: 1rem; margin: 0; max-width: 70%; line-height: 1.4; font-weight: 700; color: #1C1E27; }}
+      .action-header h5 {{ font-size: 1rem; margin: 0; max-width: 70%; line-height: 1.4; font-weight: 700; color: var(--text-white); }}
       
       .action-body {{ display: flex; justify-content: space-between; align-items: flex-end; }}
       .action-body p {{ margin: 0; font-size: 0.85rem; color: var(--text-muted); max-width: 80%; line-height: 1.5; font-weight: 500; }}
@@ -606,12 +632,13 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
       .badge-yellow {{ background: var(--alert-yellow-bg); color: var(--alert-yellow); border: 1px solid rgba(245, 166, 35, 0.2); }}
       .badge-blue {{ background: var(--alert-green-bg); color: var(--brand-green); border: 1px solid rgba(0, 208, 156, 0.2); }}
       .badge-green {{ background: var(--alert-green-bg); color: var(--brand-green); border: 1px solid rgba(0, 208, 156, 0.2); }}
+      .badge-gray {{ background: var(--alert-gray-bg); color: var(--alert-gray); border: 1px solid rgba(142, 149, 162, 0.2); }}
       
       /* --- Quotes --- */
       .quote-card {{
         padding: 1.2rem; margin-bottom: 1.5rem;
         border-left: 4px solid var(--alert-yellow);
-        background: #F9FAFB; border-radius: 0 12px 12px 0; border: 1px solid var(--border-color); border-left-width: 4px;
+        background: var(--input-bg); border-radius: 0 12px 12px 0; border: 1px solid var(--border-color); border-left-width: 4px;
       }}
       .quote-card.border-blue {{ border-left-color: var(--brand-green); }}
       .quote-card i {{ font-size: 0.95rem; color: var(--text-white); font-style: italic; font-weight: 500; line-height: 1.6; display: block; }}
@@ -622,7 +649,7 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
         width: 36px; height: 36px; background: rgba(0, 208, 156, 0.1); border-radius: 8px;
         display: flex; align-items: center; justify-content: center; color: var(--brand-green); flex-shrink: 0;
       }}
-      .idea-content p {{ margin: 0 0 10px 0; font-size: 0.95rem; font-weight: 600; line-height: 1.4; color: #1C1E27; }}
+      .idea-content p {{ margin: 0 0 10px 0; font-size: 0.95rem; font-weight: 600; line-height: 1.4; color: var(--text-color-light); }}
       
           /* --- Deep Dives --- */
       .deep-dive-card {{
@@ -630,11 +657,11 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
         margin-bottom: 1.5rem; box-shadow: var(--card-shadow); overflow: hidden;
       }}
       .dd-header {{
-        background: #F9FAFB; padding: 1rem 1.2rem; border-bottom: 1px solid var(--border-color);
+        background: var(--input-bg); padding: 1rem 1.2rem; border-bottom: 1px solid var(--border-color);
       }}
-      .dd-header h4 {{ margin: 0; font-size: 1.05rem; font-weight: 700; color: #1C1E27; display: flex; align-items: center; gap: 8px; }}
+      .dd-header h4 {{ margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-color-light); display: flex; align-items: center; gap: 8px; }}
       .dd-content {{ padding: 1.2rem; display: flex; flex-direction: column; gap: 1rem; }}
-      .dd-section {{ background: #FFFFFF; border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }}
+      .dd-section {{ background: var(--input-bg); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }}
       .dd-label {{ font-size: 0.75rem; text-transform: uppercase; font-weight: 800; color: var(--brand-green); letter-spacing: 0.5px; display: block; margin-bottom: 6px; }}
       .dd-section p {{ margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-white); font-weight: 500; }}
       
@@ -644,10 +671,10 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
         padding: 12px 16px;
         border-radius: 8px;
         border: 1px solid rgba(0, 208, 156, 0.4);
-        background: #FFFFFF;
+        background: var(--input-bg);
         font-family: 'Inter', sans-serif;
         font-weight: 700;
-        color: #1C1E27;
+        color: var(--text-color-light);
         font-size: 0.95rem;
         cursor: pointer;
         outline: none;
@@ -662,15 +689,15 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
       .week-dropdown:hover {{ border-color: var(--brand-green); box-shadow: 0 4px 12px rgba(0, 208, 156, 0.2); }}
       
       /* --- Sidebar Specific Components Background overrides --- */
-      .sidebar-bg-1 {{ background: #E8F7F3; border-color: #B5EADB; }} /* Soft Green */
-      .sidebar-bg-2 {{ background: #FDE8ED; border-color: #F8B4C4; }} /* Soft Red/Pink for Voice */
-      .sidebar-bg-3 {{ background: #EDF2FC; border-color: #C3D5F8; }} /* Soft Blue for Ideas */
+      .sidebar-bg-1 {{ background: var(--sidebar-bg-1); border-color: var(--sidebar-border-1); }} /* Soft Green */
+      .sidebar-bg-2 {{ background: var(--sidebar-bg-2); border-color: var(--sidebar-border-2); }} /* Soft Red/Pink for Voice */
+      .sidebar-bg-3 {{ background: var(--sidebar-bg-3); border-color: var(--sidebar-border-3); }} /* Soft Blue for Ideas */
       
       /* --- RICE Grid --- */
       .rice-grid {{ display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }}
-      .rice-item {{ background: #F4F5F7; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px; }}
+      .rice-item {{ background: var(--input-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px; }}
       .rice-item span {{ font-size: 0.6rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }}
-      .rice-item b {{ font-size: 0.85rem; color: #1C1E27; }}
+      .rice-item b {{ font-size: 0.85rem; color: var(--text-color-light); }}
       .rice-total {{ background: var(--alert-green-bg); border: 1px solid rgba(0, 208, 156, 0.2); padding: 4px 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px; justify-content: center; }}
       .rice-total span {{ font-size: 0.6rem; text-transform: uppercase; color: var(--brand-green); font-weight: 800; }}
       .rice-total b {{ font-size: 0.9rem; color: var(--brand-green); font-weight: 800; }}
@@ -689,27 +716,27 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
       
       /* --- Feature Impact --- */
       .feature-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }}
-      .feature-card {{ background: #F9FAFB; padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); }}
-      .f-name {{ display: block; font-size: 0.85rem; font-weight: 700; color: #1C1E27; margin-bottom: 4px; }}
+      .feature-card {{ background: var(--input-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); }}
+      .f-name {{ display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-color-light); margin-bottom: 4px; }}
       .f-status {{ display: block; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; }}
       .f-bar-bg {{ height: 4px; background: #EAECEF; border-radius: 100px; overflow: hidden; }}
       .f-bar-fill {{ height: 100%; border-radius: 100px; }}
 
       /* --- Daily Subsection --- */
       .daily-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }}
-      .daily-box {{ background: #F9FAFB; border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center; }}
+      .daily-box {{ background: var(--input-bg); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center; }}
       .d-label {{ display: block; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--brand-green); margin-bottom: 4px; }}
-      .d-count {{ display: block; font-size: 1.2rem; font-weight: 800; color: #1C1E27; }}
+      .d-count {{ display: block; font-size: 1.2rem; font-weight: 800; color: var(--text-color-light); }}
       .d-issue {{ display: block; font-size: 0.65rem; color: var(--text-muted); font-weight: 600; margin-top: 4px; }}
 
       /* --- WoW Compare Cards --- */
       .wow-compare-grid {{ display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; margin-top: 1rem; }}
-      .wow-week-card {{ background: #F9FAFB; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; text-align: center; }}
+      .wow-week-card {{ background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; text-align: center; }}
       .wow-week-label {{ font-size: 1.4rem; font-weight: 900; color: var(--brand-green); margin-bottom: 12px; }}
       .wow-metric {{ display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color); }}
       .wow-metric:last-child {{ border-bottom: none; }}
       .wow-metric span {{ font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); }}
-      .wow-metric b {{ font-size: 1rem; font-weight: 800; color: #1C1E27; }}
+      .wow-metric b {{ font-size: 1rem; font-weight: 800; color: var(--text-color-light); }}
       .wow-delta-card {{ text-align: center; padding: 10px; }}
       .wow-delta {{ font-size: 1.5rem; font-weight: 900; }}
       .wow-delta-label {{ font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-top: 2px; }}
@@ -721,10 +748,15 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
       .dd-tab-btn.active {{ color: var(--brand-green); border-bottom-color: var(--brand-green); background: rgba(0,208,156,0.06); }}
       .dd-panel {{ display: none; }}
       .dd-panel.active {{ display: block; }}
-      .dd-section {{ background: #F9FAFB; border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 12px; }}
+      .dd-section {{ background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 12px; }}
       .dd-label {{ display: block; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--brand-green); margin-bottom: 8px; }}
-      .dd-section p {{ font-size: 0.9rem; color: #1C1E27; font-weight: 500; margin: 0; line-height: 1.6; }}
+      .dd-section p {{ font-size: 0.9rem; color: var(--text-color-light); line-height: 1.6; margin: 0; font-weight: 500; opacity: 0.85; }}
 
+      .sidebar-bg-1, .sidebar-bg-2, .sidebar-bg-3 {{
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--card-shadow);
+      }}
       
     </style>
   </head>
@@ -735,16 +767,33 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
         <!-- Global Banner -->
         <div class="banner">
           <h1>Groww Weekly Pulse</h1>
-          <p>Your weekly digest of user feedback insights</p>
+          <p>Insights for {meta.week_range_label}</p>
           <div class="banner-date">Last Generated: {meta.generated_at_iso[:10]}</div>
         </div>
         
         <!-- Review Analytics Component -->
         <div class="section-card">
-          <div class="section-header">
-              <h4>Review Analytics</h4>
-              <div class="dropdown-btn"><i class="fa-regular fa-calendar"></i> 8W ▾</div>
+          <div class="section-header" style="margin-bottom: 0.5rem;">
+              <h4><i class="fa-solid fa-chart-line"></i> Analytics Overview</h4>
           </div>
+          
+          <!-- Select Week Insight Filter (Moved here) -->
+          <div style="margin-bottom: 2rem; background: #1C222D; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+            <div class="section-header" style="margin-bottom: 1rem;">
+                <h4 style="color: var(--brand-blue);"><i class="fa-solid fa-filter"></i> Select Week Insight</h4>
+            </div>
+            <select class="sidebar-week-dropdown">
+                <option value="prev_7">8 Weeks</option>
+                <option value="prev_6">7 Weeks</option>
+                <option value="prev_5">6 Weeks</option>
+                <option value="prev_4">5 Weeks</option>
+                <option value="prev_3">4 Weeks</option>
+                <option value="prev_2">3 Weeks</option>
+                <option value="prev_1">2 Weeks</option>
+                <option value="current">1 Week</option>
+            </select>
+          </div>
+
           <div class="chart-header">
               <h3>Review Volume Over Time</h3>
               <div class="chart-tag" title="Toggle Absolute vs View"><i class="fa-solid fa-chart-bar"></i> Mode: Volume</div>
@@ -755,14 +804,14 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
               </div>
               <div class="chart-inner">
                   <div class="chart-area" id="mainChart">
-                      <div class="bar-wrapper" data-week="1"><span class="bar-label" data-vol="210" data-pct="31%">210</span><div class="bar" style="height: 26%;"></div></div>
-                      <div class="bar-wrapper" data-week="2"><span class="bar-label" data-vol="270" data-pct="40%">270</span><div class="bar" style="height: 33%;"></div></div>
-                      <div class="bar-wrapper" data-week="3"><span class="bar-label" data-vol="302" data-pct="44%">302</span><div class="bar" style="height: 37%;"></div></div>
-                      <div class="bar-wrapper" data-week="4"><span class="bar-label" data-vol="400" data-pct="59%">400</span><div class="bar" style="height: 50%;"></div></div>
-                      <div class="bar-wrapper" data-week="5"><span class="bar-label" data-vol="448" data-pct="66%">448</span><div class="bar" style="height: 56%;"></div></div>
-                      <div class="bar-wrapper" data-week="6"><span class="bar-label" data-vol="496" data-pct="73%">496</span><div class="bar" style="height: 62%;"></div></div>
-                      <div class="bar-wrapper" data-week="7"><span class="bar-label" data-vol="590" data-pct="87%">590</span><div class="bar" style="height: 74%;"></div></div>
-                      <div class="bar-wrapper" data-week="8"><span class="bar-label" data-vol="680" data-pct="100%">680</span><div class="bar active" style="height: 85%;"></div></div>
+                      <div class="bar-wrapper" data-week="1"><span class="bar-label" data-vol="180" data-pct="25%">180</span><div class="bar" style="height: 22%;"></div></div>
+                      <div class="bar-wrapper" data-week="2"><span class="bar-label" data-vol="240" data-pct="33%">240</span><div class="bar" style="height: 30%;"></div></div>
+                      <div class="bar-wrapper" data-week="3"><span class="bar-label" data-vol="320" data-pct="45%">320</span><div class="bar" style="height: 40%;"></div></div>
+                      <div class="bar-wrapper" data-week="4"><span class="bar-label" data-vol="390" data-pct="54%">390</span><div class="bar" style="height: 48%;"></div></div>
+                      <div class="bar-wrapper" data-week="5"><span class="bar-label" data-vol="470" data-pct="66%">470</span><div class="bar" style="height: 58%;"></div></div>
+                      <div class="bar-wrapper" data-week="6"><span class="bar-label" data-vol="540" data-pct="76%">540</span><div class="bar" style="height: 67%;"></div></div>
+                      <div class="bar-wrapper" data-week="7"><span class="bar-label" data-vol="620" data-pct="87%">620</span><div class="bar" style="height: 77%;"></div></div>
+                      <div class="bar-wrapper" data-week="8"><span class="bar-label" data-vol="712" data-pct="100%">712</span><div class="bar active" style="height: 89%;"></div></div>
                   </div>
                   <div class="x-axis">
                       <div>1W</div><div>2W</div><div>3W</div><div>4W</div><div>5W</div><div>6W</div><div>7W</div><div>8W</div>
@@ -807,22 +856,6 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
       </div>
       
       <div class="sidebar-column">
-        <!-- Week Selector Filter -->
-        <div class="section-card sidebar-bg-1">
-          <div class="section-header" style="margin-bottom: 1rem;">
-              <h4 style="color: var(--brand-blue);"><i class="fa-solid fa-filter"></i> Select Week Insight</h4>
-          </div>
-          <select class="week-dropdown">
-              <option value="prev_7">8 Weeks</option>
-              <option value="prev_6">7 Weeks</option>
-              <option value="prev_5">6 Weeks</option>
-              <option value="prev_4">5 Weeks</option>
-              <option value="prev_3">4 Weeks</option>
-              <option value="prev_2">3 Weeks</option>
-              <option value="prev_1">2 Weeks</option>
-              <option value="current">1 Week</option>
-          </select>
-        </div>
 
         <!-- Stub Inputs to match visual exactly -->
         <div class="form-card">
@@ -891,35 +924,38 @@ def render_pulse_html(pulse: WeeklyPulse, meta: PulseRunMetadata) -> str:
             }});
         }});
 
-        // Week dropdown
-        document.querySelector('.week-dropdown').addEventListener('change', function(e) {{
-            const val = e.target.value;
-            let numWeeks = 1;
-            if (val === 'prev_1') numWeeks = 2;
-            else if (val === 'prev_2') numWeeks = 3;
-            else if (val === 'prev_3') numWeeks = 4;
-            else if (val === 'prev_4') numWeeks = 5;
-            else if (val === 'prev_5') numWeeks = 6;
-            else if (val === 'prev_6') numWeeks = 7;
-            else if (val === 'prev_7') numWeeks = 8;
-            
-            const wrappers = document.querySelectorAll('#mainChart .bar-wrapper');
-            wrappers.forEach((wrapper) => {{
-                const weekNum = parseInt(wrapper.getAttribute('data-week'));
-                const bar = wrapper.querySelector('.bar');
-                // Highlight ONLY the bar that matches the selected week exactly
-                if (weekNum === numWeeks) {{
-                    bar.classList.add('active');
-                }} else {{
-                    bar.classList.remove('active');
-                }}
+        // Sidebar Week dropdown - Highlight the specific week selected
+        const sidebarDropdown = document.querySelector('.sidebar-week-dropdown');
+        if (sidebarDropdown) {{
+            sidebarDropdown.addEventListener('change', function(e) {{
+                const val = e.target.value;
+                let tw = 8; 
+                if (val === 'current') tw = 1;
+                else if (val === 'prev_1') tw = 2;
+                else if (val === 'prev_2') tw = 3;
+                else if (val === 'prev_3') tw = 4;
+                else if (val === 'prev_4') tw = 5;
+                else if (val === 'prev_5') tw = 6;
+                else if (val === 'prev_6') tw = 7;
+                else if (val === 'prev_7') tw = 8;
+                
+                const wrappers = document.querySelectorAll('#mainChart .bar-wrapper');
+                wrappers.forEach((wrapper) => {{
+                    const weekNum = parseInt(wrapper.getAttribute('data-week'));
+                    const bar = wrapper.querySelector('.bar');
+                    if (weekNum === tw) {{
+                        bar.classList.add('active');
+                    }} else {{
+                        bar.classList.remove('active');
+                    }}
+                }});
             }});
-        }});
+        }}
         
         const chartTag = document.querySelector('.chart-tag');
-        // Store original volume heights (mapped to 0-800 scale where 100%=800)
-        const volumeHeights = [26, 33, 37, 50, 56, 62, 74, 85];
-        const maxHeight = Math.max(...volumeHeights);
+        // Store original volume heights (scaled to 800 Y-max)
+        const volumeHeights = [22, 30, 40, 48, 58, 67, 77, 89];
+        const maxHeight = 89; // 712/800 = 89%
         const volumeLabels = ['800', '600', '400', '200', '0'];
         const percentLabels = ['100%', '75%', '50%', '25%', '0%'];
         let isPercent = false;

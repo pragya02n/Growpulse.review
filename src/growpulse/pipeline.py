@@ -18,7 +18,11 @@ from .phase4.delivery import EmailConfig, Mailer, PulseRunMetadata, build_email_
 
 @dataclass
 class PipelineConfig:
-    csv_path: Path
+    csv_path: Optional[Path] = None
+    use_sheets: bool = False
+    spreadsheet_id: Optional[str] = None
+    credentials_path: Optional[str] = None
+    calendar_id: Optional[str] = None
     time_window_weeks: int = 12
     groq_api_key: Optional[str] = None
     groq_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
@@ -56,8 +60,23 @@ def run_pipeline(
     - Phase 3: generate weekly pulse via Groq.
     - Phase 4: build (and optionally send) email.
     """
-    # Phase 1
-    cleaned = ingest_and_clean_reviews(cfg.csv_path, time_window_weeks=cfg.time_window_weeks, now=now)
+    # Phase 1: Ingestion
+    if cfg.use_sheets and cfg.spreadsheet_id and cfg.credentials_path:
+        from .google_integration import GoogleSheetsIngestor
+        ingestor = GoogleSheetsIngestor(cfg.credentials_path)
+        cleaned = ingestor.fetch_reviews(
+            cfg.spreadsheet_id, 
+            time_window_weeks=cfg.time_window_weeks, 
+            now=now
+        )
+    elif cfg.csv_path:
+        cleaned = ingest_and_clean_reviews(
+            cfg.csv_path, 
+            time_window_weeks=cfg.time_window_weeks, 
+            now=now
+        )
+    else:
+        raise ValueError("No input source provided (CSV or Google Sheets).")
 
     # Phase 2
     themed = classify_reviews(cleaned)
@@ -94,6 +113,16 @@ def run_pipeline(
         if mailer is None:
             mailer = Mailer(cfg.email)
         mailer.send(email_msg)
+
+    # Optional: Sync to Google Calendar
+    if cfg.calendar_id and cfg.credentials_path:
+        from .google_integration import GoogleCalendarSync
+        try:
+            syncer = GoogleCalendarSync(cfg.credentials_path)
+            calendar_summary = f"Summary: {pulse.body_markdown[:500]}..."
+            syncer.create_pulse_event(cfg.calendar_id, pulse.title, calendar_summary)
+        except Exception as e:
+            print(f"Warning: Failed to sync to Google Calendar: {e}")
 
     return PipelineResult(
         cleaned_reviews=cleaned,

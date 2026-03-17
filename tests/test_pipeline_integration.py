@@ -14,7 +14,17 @@ class FakeGroqClient(GroqClient):
         self.model = "test"
 
     def generate_pulse(self, prompt: str) -> str:  # type: ignore[override]
-        return "# Weekly Pulse\n\nIntegration test note."
+        import json
+        return json.dumps({
+            "themes": [{"name": "Payments", "mentions": 10, "priority": "HIGH", "percentage_change": "+5%", "action_text": "Fix UPI"}],
+            "quotes": ["Integration test quote"],
+            "actions": [],
+            "severity_scores": [],
+            "feature_impact": [],
+            "theme_deep_dives": [],
+            "weekly_comparison": [],
+            "daily_breakdown": []
+        })
 
 
 class FakeMailer(Mailer):
@@ -85,9 +95,9 @@ def test_full_pipeline_with_fakes(tmp_path: Path) -> None:
     assert len(result.cleaned_reviews) == 2
     # Phase 2: classification produced summaries
     assert len(result.summaries) >= 1
-    # Phase 3: pulse generated
-    assert "Weekly Pulse" in result.pulse.body_markdown
+    # Phase 3: pulse generated (now JSON)
+    assert '"Payments"' in result.pulse.body_markdown
     # Phase 4: email sent via fake mailer
     assert len(fake_mailer.sent) == 1
-    assert "Weekly Pulse" in fake_mailer.sent[0].body_html
+    assert "Groww Weekly Pulse" in fake_mailer.sent[0].body_html
 

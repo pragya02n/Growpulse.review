@@ -8,9 +8,10 @@ The design is **file-system friendly** (runs on a local machine or a simple serv
 
 ## High-Level Overview
 
-- **Input**: Local CSV file of Groww app reviews for the last 8–12 weeks, with at least: `rating`, `title`, `text`, `date`, and optionally `platform`, `language`, `device info`.
+- **Input**: Local CSV file OR Google Sheet of Groww app reviews for the last 8–12 weeks.
 - **Core Responsibilities**:
-  - Ingest and filter reviews by time window.
+  - Ingest reviews from local CSV or Google Sheets.
+  - Automatically sync summaries to Google Calendar.
   - Strictly remove PII from the text.
   - Classify reviews into up to **5 core themes** (e.g., onboarding, KYC, payments, withdrawals, app performance).
   - Summarize and prioritize themes into a **one-page weekly pulse note**:
@@ -24,10 +25,10 @@ The design is **file-system friendly** (runs on a local machine or a simple serv
 
 The system is divided into **four logical phases**:
 
-1. Phase 1: Local Data Ingestion & PII Cleaning  
+1. Phase 1: Data Ingestion (CSV/Sheets) & PII Cleaning  
 2. Phase 2: Theme Classification  
 3. Phase 3: Weekly Pulse Generation  
-4. Phase 4: Email Drafting & Delivery  
+4. Phase 4: Delivery (Email, UI, Calendar Sync)
 
 Additionally, there are **cross-cutting** concerns:
 
@@ -41,7 +42,7 @@ Additionally, there are **cross-cutting** concerns:
 
 ### Objectives
 
-- Read the local CSV containing app reviews.
+- Read the local CSV or fetch data from Google Sheets via API.
 - Filter reviews to the configured **time window** (e.g., last 8–12 weeks).
 - Normalize and validate the review schema.
 - **Aggressively remove PII** (names, phone numbers, emails, account IDs, etc.) *before* anything is sent to the LLM.
@@ -61,10 +62,12 @@ Additionally, there are **cross-cutting** concerns:
 
 - **Config Loader**
   - Reads configuration from environment variables / config file:
-    - `REVIEWS_CSV_PATH`
+    - `REVIEWS_CSV_PATH` or `GOOGLE_SHEET_ID`
+    - `GOOGLE_APPLICATION_CREDENTIALS` (Service Account JSON)
     - `TIME_WINDOW_WEEKS` (default: 8–12).
-    - LLM provider keys (only used in later phases).
-    - Email settings (SMTP host, port, sender, recipient alias, etc.).
+    - LLM provider keys (GROQ_API_KEY).
+    - Email settings (GMAIL_USER, GMAIL_APP_PASSWORD, etc.).
+    - `GOOGLE_CALENDAR_ID` for event synchronization.
 
 - **CSV Reader**
   - Reads the CSV with schema validation:
@@ -282,9 +285,9 @@ Additionally, there are **cross-cutting** concerns:
   - Two operating modes:
     - **Draft-only**: write the email body to a local EML/HTML file, or open default mail client with prefilled draft.
     - **Auto-send**: send directly via SMTP/API and log result.
-  - Logs:
-    - Timestamp, recipient, subject.
-    - Whether send succeeded or failed.
+  - **Calendar Synchronization**
+  - Logs the weekly pulse summary as an event in a configured Google Calendar.
+  - Useful for team-wide scheduling and historical tracking in shared calendars.
 
 ---
 

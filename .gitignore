@@ -1,5 +1,6 @@
 # Environment variables - never commit secrets
 .env
+*.json
 
 # Generated HTML output files
 weekly_pulse*.html

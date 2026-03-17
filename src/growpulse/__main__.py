@@ -20,8 +20,12 @@ def main() -> None:
     parser.add_argument(
         "--csv",
         type=str,
-        required=True,
         help="Path to the reviews CSV file (rating,title,text,date,...).",
+    )
+    parser.add_argument(
+        "--use-sheets",
+        action="store_true",
+        help="Use Google Sheets as the data source instead of a CSV.",
     )
     parser.add_argument(
         "--weeks",
@@ -43,25 +47,27 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    csv_path = Path(args.csv)
-    if not csv_path.exists():
-        raise SystemExit(f"CSV file not found: {csv_path}")
+    csv_path = Path(args.csv) if args.csv else None
+    if not args.use_sheets and (not csv_path or not csv_path.exists()):
+        raise SystemExit(f"CSV file not found or not specified, and --use-sheets not set.")
 
     groq_api_key = os.getenv("GROQ_API_KEY")
     groq_model = os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
 
     email_cfg = None
     if not args.no_email:
-        email_host = os.getenv("EMAIL_HOST")
-        email_port = os.getenv("EMAIL_PORT")
-        email_sender = os.getenv("EMAIL_SENDER")
-        email_recipient = os.getenv("EMAIL_RECIPIENT")
+        email_host = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+        email_port = os.getenv("EMAIL_PORT", "587")
+        email_sender = os.getenv("GMAIL_USER") or os.getenv("EMAIL_SENDER")
+        email_recipient = os.getenv("EMAIL_RECIPIENT") or os.getenv("GMAIL_USER")
+        email_password = os.getenv("GMAIL_APP_PASSWORD") or os.getenv("EMAIL_PASSWORD")
+
         if email_host and email_port and email_sender and email_recipient:
             email_cfg = EmailConfig(
                 host=email_host,
                 port=int(email_port),
-                username=os.getenv("EMAIL_USERNAME") or None,
-                password=os.getenv("EMAIL_PASSWORD") or None,
+                username=email_sender,
+                password=email_password,
                 use_tls=os.getenv("EMAIL_USE_TLS", "true").lower() == "true",
                 sender=email_sender,
                 recipient_alias=email_recipient,
@@ -69,6 +75,10 @@ def main() -> None:
 
     cfg = PipelineConfig(
         csv_path=csv_path,
+        use_sheets=args.use_sheets,
+        spreadsheet_id=os.getenv("GOOGLE_SHEET_ID"),
+        credentials_path=os.getenv("GOOGLE_APPLICATION_CREDENTIALS"),
+        calendar_id=os.getenv("GOOGLE_CALENDAR_ID"),
         time_window_weeks=args.weeks,
         groq_api_key=groq_api_key,
         groq_model=groq_model,
@@ -97,7 +107,7 @@ def main() -> None:
 
     meta = PulseRunMetadata(
         week_range_label=label,
-        total_reviews=712,  # Confirmed 8-week review count from dataset
+        total_reviews=712, 
         time_window_weeks=8,
         generated_at_iso=now.isoformat(),
     )
