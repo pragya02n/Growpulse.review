@@ -26,9 +26,11 @@ jobs:
           pip install .
 
       - name: Create Google Credentials JSON
-        if: "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON != '' }}"
+        env:
+          GOOGLE_JSON: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+        if: "${{ env.GOOGLE_JSON != '' }}"
         run: |
-          echo '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}' > google_creds.json
+          echo "$GOOGLE_JSON" > google_creds.json
 
       - name: Run GrowPulse Pipeline
         env:
