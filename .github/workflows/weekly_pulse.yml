@@ -27,7 +27,7 @@ jobs:
 
       - name: Create Google Credentials JSON
         env:
-          GOOGLE_JSON_TEXT: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}"
+          GOOGLE_JSON_TEXT: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
         run: |
           if [ -n "$GOOGLE_JSON_TEXT" ]; then
             echo "$GOOGLE_JSON_TEXT" > google_creds.json
