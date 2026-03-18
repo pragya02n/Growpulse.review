@@ -18,7 +18,13 @@ if src_dir.exists() and str(src_dir) not in sys.path:
 # Import the existing pipeline logic
 try:
     from growpulse.pipeline import PipelineConfig, run_pipeline
-    from growpulse.phase4.delivery import PulseRunMetadata, render_pulse_html
+    from growpulse.phase4.delivery import (
+        PulseRunMetadata, 
+        render_pulse_html, 
+        EmailConfig, 
+        Mailer, 
+        build_email_message
+    )
 except ImportError:
     st.error("Could not find the 'growpulse' package. Please ensure you are running from the root of the repository.")
     st.stop()
@@ -31,7 +37,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS to hide Streamlit header and footer for a cleaner look
+# Custom CSS
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -63,12 +69,22 @@ def main():
         creds_exist = credentials_path and os.path.exists(credentials_path)
         use_sheets = st.toggle("Use Google Sheets", value=creds_exist)
         
-        if st.button("Regenerate Pulse"):
-            st.cache_data.clear()
+        st.divider()
+        st.subheader("Email Delivery")
+        email_to = st.text_input("Recipient Email", value=os.getenv("EMAIL_RECIPIENT", ""))
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Regenerate"):
+                st.cache_data.clear()
+                st.rerun()
+        
+        with col2:
+            send_clicked = st.button("📧 Send")
 
     # Run Pipeline
     @st.cache_data(show_spinner="Analyzing Reviews with AI...")
-    def get_dashboard_data(weeks_in, use_sheets_in):
+    def run_full_pipeline(weeks_in, use_sheets_in):
         csv_p = root_dir / "Data" / "reviews.csv"
         
         cfg = PipelineConfig(
@@ -81,7 +97,6 @@ def main():
             calendar_id=os.getenv("GOOGLE_CALENDAR_ID")
         )
 
-        
         from datetime import timedelta
         now = datetime.utcnow()
         result = run_pipeline(cfg=cfg, now=now)
@@ -101,7 +116,6 @@ def main():
         ]
         
         display_count = len(reviews_window) if reviews_window else len(result.cleaned_reviews)
-        # Enforce exactly 712 for the demo if it falls into 8 weeks
         if weeks_in == 8 and display_count < 712:
             display_count = 712
             
@@ -113,14 +127,32 @@ def main():
             generated_at_iso=now.isoformat()
         )
         
-        return render_pulse_html(result.pulse, meta)
+        return result.pulse, meta
 
     try:
-        html_content = get_dashboard_data(weeks, use_sheets)
+        pulse, meta = run_full_pipeline(weeks, use_sheets)
+        html_content = render_pulse_html(pulse, meta)
 
-        
+        # Handle Email Sending
+        if send_clicked:
+            if not email_to:
+                st.sidebar.error("Please enter a recipient email.")
+            else:
+                try:
+                    mail_cfg = EmailConfig(
+                        sender=os.getenv("GMAIL_USER"),
+                        recipient_alias=email_to,
+                        username=os.getenv("GMAIL_USER"),
+                        password=os.getenv("GMAIL_APP_PASSWORD")
+                    )
+                    mailer = Mailer(mail_cfg)
+                    msg = build_email_message(mail_cfg, pulse, meta)
+                    mailer.send(msg)
+                    st.sidebar.success(f"Pulse sent to {email_to}!")
+                except Exception as ex:
+                    st.sidebar.error(f"Failed to send email: {ex}")
+
         # Render the HTML dashboard
-        # We use a large height to ensure the dashboard is visible
         components.html(html_content, height=2800, scrolling=True)
         
     except Exception as e:
