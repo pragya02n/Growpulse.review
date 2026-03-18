@@ -30,28 +30,35 @@ jobs:
           GOOGLE_JSON_TEXT: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
         run: |
           if [ -n "$GOOGLE_JSON_TEXT" ]; then
-            echo "$GOOGLE_JSON_TEXT" > ${{ github.workspace }}/google_creds.json 
+            echo "$GOOGLE_JSON_TEXT" > ${{ github.workspace }}/google_creds.json
+            echo "GOOGLE_CREDS_EXIST=true" >> $GITHUB_ENV
+          else
+            echo "GOOGLE_CREDS_EXIST=false" >> $GITHUB_ENV
           fi
 
       - name: Run GrowPulse Pipeline
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/google_creds.json
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/google_creds.json
         run: |
-          # If GOOGLE_SHEET_ID is provided, prefer Sheets ingestion
-          if [ -n "$GOOGLE_SHEET_ID" ]; then
-            python -m growpulse --use-sheets --out-html dashboard.html
+          # Use Sheets if ID set and credentials exist, else fallback to CSV
+          if [ "${{ env.GOOGLE_CREDS_EXIST }}" = "true" ] && [ -n "$GOOGLE_SHEET_ID" ]; then
+            echo "Running with Google Sheets data source..."
+            python -m growpulse --use-sheets --out-html dashboard.html --weeks 12
           else
-            python -m growpulse --csv Data/reviews.csv --out-html dashboard.html
+            echo "Running with local CSV data source (Fallback or default)..."
+            python -m growpulse --csv Data/reviews.csv --out-html dashboard.html --weeks 12
           fi
 
       - name: Upload Dashboard Artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: weekly-pulse-dashboard
           path: dashboard.html
+

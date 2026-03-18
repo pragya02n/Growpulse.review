@@ -61,7 +61,9 @@ def run_pipeline(
     - Phase 4: build (and optionally send) email.
     """
     # Phase 1: Ingestion
-    if cfg.use_sheets and cfg.spreadsheet_id and cfg.credentials_path:
+    creds_exist = cfg.credentials_path and Path(cfg.credentials_path).exists()
+    
+    if cfg.use_sheets and cfg.spreadsheet_id and creds_exist:
         from .google_integration import GoogleSheetsIngestor
         ingestor = GoogleSheetsIngestor(cfg.credentials_path)
         cleaned = ingestor.fetch_reviews(
@@ -69,14 +71,14 @@ def run_pipeline(
             time_window_weeks=cfg.time_window_weeks, 
             now=now
         )
-    elif cfg.csv_path:
+    elif cfg.csv_path and Path(cfg.csv_path).exists():
         cleaned = ingest_and_clean_reviews(
             cfg.csv_path, 
             time_window_weeks=cfg.time_window_weeks, 
             now=now
         )
     else:
-        raise ValueError("No input source provided (CSV or Google Sheets).")
+        raise ValueError("No input source provided (CSV missing or Google Sheets credentials missing).")
 
     # Phase 2
     themed = classify_reviews(cleaned)

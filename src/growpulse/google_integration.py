@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
+from typing import Optional
+
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import pandas as pd

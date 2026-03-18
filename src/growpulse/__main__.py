@@ -107,7 +107,7 @@ def main() -> None:
 
     meta = PulseRunMetadata(
         week_range_label=label,
-        total_reviews=712, 
+        total_reviews=display_count,
         time_window_weeks=8,
         generated_at_iso=now.isoformat(),
     )
@@ -128,4 +128,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
